@@ -14,16 +14,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 8px;
+      padding: 10px;
       overflow: hidden;
     }
 
-    /* 아이폰 12 미니 등 모바일 맞춤 아이팟 케이싱 */
+    /* 아이팟 케이스 본체 (PC/모바일 공통 반응형 비율) */
     .ipod-body {
       width: 100%;
-      max-width: 360px;
+      max-width: 340px;
       height: 100%;
-      max-height: 680px;
+      max-height: 700px;
       background: linear-gradient(145deg, #ffffff, #dcdcdc);
       border-radius: 36px;
       padding: 16px 14px;
@@ -36,11 +36,11 @@
       position: relative;
     }
 
-    /* 상단 디스플레이 화면 키움 */
+    /* 상단 디스플레이 화면 */
     .ipod-screen {
       width: 100%;
-      flex: 1.1;
-      max-height: 350px;
+      flex: 1.2;
+      max-height: 380px;
       background: #ffffff;
       border: 3px solid #333;
       border-radius: 14px;
@@ -76,7 +76,7 @@
     }
 
     .screen-content {
-      padding: 10px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -94,10 +94,9 @@
       flex: 1;
     }
     
-    /* 앨범 아트워크 크기 대폭 확대 (120px -> 160px) */
     .thumbnail-box {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       margin: 4px auto 8px;
       border: 2px solid #ccc;
       border-radius: 10px;
@@ -110,7 +109,6 @@
     }
     .thumbnail-box img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* 글씨 크기 및 가독성 업그레이드 */
     .song-title { 
       font-size: 14px; 
       font-weight: bold; 
@@ -127,7 +125,7 @@
       justify-content: center;
       align-items: center;
       width: 100%;
-      padding-bottom: 2px;
+      padding-bottom: 4px;
     }
     .reaction-btn {
       background: none;
@@ -241,19 +239,19 @@
     .reply-btn { font-size: 9px; color: #38bdf8; cursor: pointer; background: none; border: none; font-weight: bold; }
     .reply-list { margin-left: 6px; margin-top: 4px; border-left: 2px solid #7dd3fc; padding-left: 6px; }
 
-    /* 클릭 휠 크기 및 세로 비율 재조정 (220px) */
+    /* 클릭 휠 영역 (모바일 기준 최적화) */
     .wheel-container {
       flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
-      padding: 10px 0 4px;
+      padding: 6px 0;
     }
 
     .click-wheel {
-      width: 220px;
-      height: 220px;
+      width: 210px;
+      height: 210px;
       background: #ffffff;
       border-radius: 50%;
       position: relative;
@@ -264,15 +262,36 @@
     }
     
     .wheel-btn { position: absolute; background: none; border: none; font-weight: bold; color: #555; cursor: pointer; user-select: none; }
-    .btn-menu { top: 16px; left: 50%; transform: translateX(-50%); font-size: 13px; }
-    .btn-prev { left: 16px; top: 50%; transform: translateY(-50%); font-size: 15px; }
-    .btn-next { right: 16px; top: 50%; transform: translateY(-50%); font-size: 15px; }
-    .btn-play-pause { bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 13px; }
+    .btn-menu { top: 15px; left: 50%; transform: translateX(-50%); font-size: 12px; }
+    .btn-prev { left: 15px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+    .btn-next { right: 15px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+    .btn-play-pause { bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 12px; }
     
     .center-button {
-      width: 80px; height: 80px; background: linear-gradient(145deg, #e6e6e6, #ffffff);
+      width: 76px; height: 76px; background: linear-gradient(145deg, #e6e6e6, #ffffff);
       border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       box-shadow: 0 3px 8px rgba(0,0,0,0.2); border: 1px solid #ccc; cursor: pointer;
+    }
+
+    /* PC 화면 전용 조정 (너비 768px 이상일 때 휠 크기를 줄이고 여백 확보) */
+    @media (min-width: 768px) {
+      .ipod-body {
+        max-width: 320px;
+        max-height: 640px;
+        padding: 12px 10px;
+      }
+      .click-wheel {
+        width: 175px;
+        height: 175px;
+      }
+      .center-button {
+        width: 62px;
+        height: 62px;
+      }
+      .thumbnail-box {
+        width: 130px;
+        height: 130px;
+      }
     }
 
     #sc-player-container { position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; }
