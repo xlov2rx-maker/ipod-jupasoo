@@ -18,7 +18,6 @@
       overflow: hidden;
     }
 
-    /* 아이팟 케이스 본체 (PC/모바일 공통 반응형 비율) */
     .ipod-body {
       width: 100%;
       max-width: 340px;
@@ -36,7 +35,6 @@
       position: relative;
     }
 
-    /* 상단 디스플레이 화면 */
     .ipod-screen {
       width: 100%;
       flex: 1.2;
@@ -239,7 +237,6 @@
     .reply-btn { font-size: 9px; color: #38bdf8; cursor: pointer; background: none; border: none; font-weight: bold; }
     .reply-list { margin-left: 6px; margin-top: 4px; border-left: 2px solid #7dd3fc; padding-left: 6px; }
 
-    /* 클릭 휠 영역 (모바일 기준 최적화) */
     .wheel-container {
       flex: 1;
       display: flex;
@@ -273,7 +270,6 @@
       box-shadow: 0 3px 8px rgba(0,0,0,0.2); border: 1px solid #ccc; cursor: pointer;
     }
 
-    /* PC 화면 전용 조정 (너비 768px 이상일 때 휠 크기를 줄이고 여백 확보) */
     @media (min-width: 768px) {
       .ipod-body {
         max-width: 320px;
@@ -351,10 +347,11 @@
     <div class="screen-content">
       <div class="player-display">
         <div class="thumbnail-box">
-          <img id="album-art" src="https://via.placeholder.com/150?text=SoundCloud" alt="Album Art">
+          <img id="album-art" src="https://i1.sndcdn.com/artworks-00000000-default-t500x500.jpg" alt="Album Art">
         </div>
-        <div class="song-title" id="song-title">노래 로딩 준비 중...</div>
-        <div class="status-text" id="status-text">▶ 재생 로딩 중...</div>
+        <!-- 즉시 로딩되도록 초기 텍스트 설정 -->
+        <div class="song-title" id="song-title">음악 재생 준비 중...</div>
+        <div class="status-text" id="status-text">▶ 자동재생 대기 중...</div>
       </div>
 
       <div class="reaction-bar">
@@ -399,6 +396,9 @@
 
   let currentTrackUrl = getStoredTrack();
 
+  // 초기 타이틀과 썸네일을 로딩 전에도 빈 화면이 안 뜨도록 기본값 설정
+  document.getElementById('song-title').textContent = currentTrackUrl.split('/').pop() || "주파수의 플레이어";
+
   window.addEventListener('load', function() {
     const iframe = document.getElementById('sc-widget');
     iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(currentTrackUrl)}&auto_play=true&show_artwork=true`;
@@ -417,6 +417,14 @@
     widget.bind(SC.Widget.Events.FINISH, function() {
       widget.seekTo(0);
       widget.play();
+    });
+
+    // PC와 모바일 간 데이터 실시간 동기화 (다른 기기나 탭에서 노래가 바뀌면 즉시 연동됨)
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'saved_ipod_track' && e.newValue && e.newValue !== currentTrackUrl) {
+        currentTrackUrl = e.newValue;
+        loadSingleTrack(currentTrackUrl, true);
+      }
     });
 
     const autoPlayTrigger = function() {
