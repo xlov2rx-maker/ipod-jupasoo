@@ -387,15 +387,18 @@
 
   const DEFAULT_TRACK_URL = "https://soundcloud.com/forss/voodoo";
   
-  // 주소창(?track=...)을 최우선으로 사용하여 다른 사람이 접속할 때도 해당 곡이 바로 나오도록 처리
+  // [최종 해결책 적용] 주소창의 ?track= 파라미터를 강력하고 정확하게 우선 파싱하도록 수정
   function getStoredTrack() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const trackParam = urlParams.get('track');
+      let trackParam = urlParams.get('track');
+      
       if (trackParam) {
+        trackParam = decodeURIComponent(trackParam);
         localStorage.setItem("saved_ipod_track", trackParam);
         return trackParam;
       }
+      
       return localStorage.getItem("saved_ipod_track") || DEFAULT_TRACK_URL;
     } catch(e) {
       return DEFAULT_TRACK_URL;
@@ -526,7 +529,6 @@
       console.warn("Storage save error", e);
     }
     
-    // 주소창에 ?track=링크를 강제로 붙여서 공유 가능한 상태로 갱신 및 클립보드 복사
     const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     const shareUrl = baseUrl + "?track=" + encodeURIComponent(currentTrackUrl);
     
