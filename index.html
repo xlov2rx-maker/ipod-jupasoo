@@ -387,7 +387,7 @@
 
   const DEFAULT_TRACK_URL = "https://soundcloud.com/forss/voodoo";
   
-  // 주소창(?track=...)이나 로컬스토리지에서 곡 가져오기
+  // 주소창(?track=...)을 최우선으로 사용하여 다른 사람이 접속할 때도 해당 곡이 바로 나오도록 처리
   function getStoredTrack() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -526,13 +526,20 @@
       console.warn("Storage save error", e);
     }
     
-    // 주소창에 ?track=링크 추가하여 다른 사람도 공유받을 수 있도록 처리
-    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + "?track=" + encodeURIComponent(currentTrackUrl);
-    window.history.replaceState({path: newUrl}, '', newUrl);
+    // 주소창에 ?track=링크를 강제로 붙여서 공유 가능한 상태로 갱신 및 클립보드 복사
+    const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    const shareUrl = baseUrl + "?track=" + encodeURIComponent(currentTrackUrl);
+    
+    window.history.replaceState({path: shareUrl}, '', shareUrl);
 
     loadSingleTrack(currentTrackUrl, true);
     closeSettingsModal();
-    alert('노래가 변경되었습니다! 이제 변경된 주소창 링크를 복사해서 공유하면 다른 사람도 이 노래를 들을 수 있습니다.');
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('노래가 변경되었고, 공유 링크가 클립보드에 복사되었습니다!\n\n다른 사람에게 이 링크를 그대로 공유해주세요.');
+    }).catch(() => {
+      alert('노래가 변경되었습니다. 주소창의 링크를 복사해서 공유해주세요!');
+    });
   }
 
   function openCommentsModal() {
