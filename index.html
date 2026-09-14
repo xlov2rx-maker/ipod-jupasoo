@@ -235,13 +235,14 @@
 </div>
 
 <div id="sc-player-container">
-  <iframe id="sc-widget" width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src=""></iframe>
+  <!-- 🎵 iframe src에 링크를 직접 박아넣어 로딩 지연을 없앴습니다 -->
+  <iframe id="sc-widget" width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/forss/voodoo&auto_play=true&show_artwork=true"></iframe>
 </div>
 
 <script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
-  // 🎵 https://soundcloud.com/mxrninx/nobody-like-you
-  const FIXED_TRACK_URL = "https://soundcloud.com/mxrninx/nobody-like-you";
+  // 🎵 https://soundcloud.com/404wave/penomeco-pt-2
+  const FIXED_TRACK_URL = "https://soundcloud.com/404wave/penomeco-pt-2";
 
   let widget;
   let isPlaying = false;
@@ -250,25 +251,18 @@
 
   window.addEventListener('load', function() {
     const iframe = document.getElementById('sc-widget');
-    iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(FIXED_TRACK_URL)}&auto_play=true&show_artwork=true`;
-
     widget = SC.Widget(iframe);
 
+    // 위젯이 뜨자마자 사운드 정보를 바로 가져와서 화면에 세팅
     widget.bind(SC.Widget.Events.READY, function() {
-      widget.load(FIXED_TRACK_URL, {
-        auto_play: true,
-        callback: function() {
-          widget.play();
-          widget.getCurrentSound(function(currentSound) {
-            if (currentSound) {
-              document.getElementById('song-title').textContent = currentSound.title;
-              const artwork = currentSound.artwork_url ? currentSound.artwork_url.replace('-large', '-t500x500') : 'https://via.placeholder.com/150?text=No+Art';
-              document.getElementById('album-art').src = artwork;
-            }
-          });
+      widget.setVolume(currentVolume);
+      widget.getCurrentSound(function(currentSound) {
+        if (currentSound) {
+          document.getElementById('song-title').textContent = currentSound.title;
+          const artwork = currentSound.artwork_url ? currentSound.artwork_url.replace('-large', '-t500x500') : 'https://via.placeholder.com/150?text=No+Art';
+          document.getElementById('album-art').src = artwork;
         }
       });
-      widget.setVolume(currentVolume);
       tryPlayAudio();
     });
 
