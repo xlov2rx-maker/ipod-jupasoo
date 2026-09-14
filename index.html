@@ -352,7 +352,7 @@
           <img id="album-art" src="https://i1.sndcdn.com/artworks-00000000-default-t500x500.jpg" alt="Album Art">
         </div>
         <div class="song-title" id="song-title">음악 재생 준비 중...</div>
-        <div class="status-text" id="status-text">▶ 자동재생 대기 중...</div>
+        <div class="status-text" id="status-text">▶ 터치하여 재생 대기 중...</div>
       </div>
 
       <div class="reaction-bar">
@@ -387,8 +387,15 @@
 
   const DEFAULT_TRACK_URL = "https://soundcloud.com/forss/voodoo";
   
+  // 주소창(?track=...)이나 로컬스토리지에서 곡 가져오기
   function getStoredTrack() {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackParam = urlParams.get('track');
+      if (trackParam) {
+        localStorage.setItem("saved_ipod_track", trackParam);
+        return trackParam;
+      }
       return localStorage.getItem("saved_ipod_track") || DEFAULT_TRACK_URL;
     } catch(e) {
       return DEFAULT_TRACK_URL;
@@ -425,17 +432,17 @@
       }
     });
 
-    // 모바일 터치 시 자동 재생 권한 강제 활성화
+    // 모바일/PC 첫 터치 시 자동 재생 권한 강제 활성화 트리거
     const autoPlayTrigger = function() {
       tryPlayAudio();
-      document.removeEventListener('touchstart', autoPlayTrigger);
-      document.removeEventListener('click', autoPlayTrigger);
-      document.removeEventListener('touchend', autoPlayTrigger);
+      window.removeEventListener('touchstart', autoPlayTrigger);
+      window.removeEventListener('click', autoPlayTrigger);
+      window.removeEventListener('touchend', autoPlayTrigger);
     };
 
-    document.addEventListener('touchstart', autoPlayTrigger, { passive: true, once: true });
-    document.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
-    document.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
+    window.addEventListener('touchstart', autoPlayTrigger, { passive: true, once: true });
+    window.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
+    window.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
   });
 
   function tryPlayAudio() {
@@ -519,9 +526,13 @@
       console.warn("Storage save error", e);
     }
     
+    // 주소창에 ?track=링크 추가하여 다른 사람도 공유받을 수 있도록 처리
+    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + "?track=" + encodeURIComponent(currentTrackUrl);
+    window.history.replaceState({path: newUrl}, '', newUrl);
+
     loadSingleTrack(currentTrackUrl, true);
     closeSettingsModal();
-    alert('노래가 성공적으로 변경되어 저장되었습니다!');
+    alert('노래가 변경되었습니다! 이제 변경된 주소창 링크를 복사해서 공유하면 다른 사람도 이 노래를 들을 수 있습니다.');
   }
 
   function openCommentsModal() {
@@ -538,7 +549,7 @@
   }
 
   function updatePlayStatus() {
-    document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (버튼 클릭)';
+    document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (화면 터치 시 재생)';
   }
 
   function toggleLike() {
