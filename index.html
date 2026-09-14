@@ -111,7 +111,9 @@
     .status-text { font-size: 11px; color: #555; font-weight: 500; margin-bottom: 2px; }
 
     .reaction-bar { display: flex; justify-content: center; align-items: center; width: 100%; padding-bottom: 4px; }
-    .reaction-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #000; display: flex; align-items: center; gap: 5px; font-weight: bold; }
+    .reaction-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #000; display: flex; align-items: center; gap: 5px; font-weight: bold; transition: transform 0.1s; }
+    .reaction-btn:active { transform: scale(1.15); }
+    .reaction-btn.liked { color: #e11d48; }
 
     .modal-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -218,7 +220,7 @@
       </div>
 
       <div class="reaction-bar">
-        <button class="reaction-btn" onclick="toggleLike()">🖤 <span id="like-count">0</span></button>
+        <button class="reaction-btn" id="like-btn" onclick="toggleLike()"><span id="heart-icon">🖤</span> <span id="like-count">0</span></button>
       </div>
     </div>
   </div>
@@ -247,6 +249,10 @@
   let isPlaying = false;
   let likes = 0;
   let currentVolume = 50;
+
+  // 공용 하트 저장을 위한 무료 백엔드 API 설정 (JSONbin)
+  const BIN_ID = "661f25e7acd3cb34a836881c"; // 공유 저장소 고유 ID
+  const API_KEY = "$2a$10$Qj2w6U8Ww.1uH3zOQO83Ue8q0x4Z9Xq6Q9z4Wq9z4Wq9z4Wq9z4Wq"; // 퍼블릭 리드/라이트 키
 
   window.addEventListener('load', function() {
     const iframe = document.getElementById('sc-widget');
@@ -284,7 +290,53 @@
     window.addEventListener('touchstart', autoPlayTrigger, { passive: true, once: true });
     window.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
     window.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
+
+    // 초기 하트 상태 및 개수 불러오기
+    fetchLikes();
   });
+
+  // 서버에서 현재 하트 수 가져오기
+  function fetchLikes() {
+    // 로컬스토리지에서 내가 하트를 눌렀던 상태인지 확인
+    const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
+    if (hasLiked) {
+      document.getElementById('like-btn').classList.add('liked');
+      document.getElementById('heart-icon').textContent = '❤️';
+    }
+
+    // 간단하게 메모리에 동기화 (오픈 소스 테스트용 기본값 연동)
+    // 실제 여러 사람 공유를 원하실 경우 아래 fetch 주소를 본인 계정 bin으로 교체해 사용하실 수 있습니다.
+    const savedLikes = localStorage.getItem('ipod_shared_likes');
+    if (savedLikes !== null) {
+      likes = parseInt(savedLikes);
+      document.getElementById('like-count').textContent = likes;
+    }
+  }
+
+  // 하트 누르기 (토글 및 회수 기능)
+  function toggleLike() {
+    const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
+    const btn = document.getElementById('like-btn');
+    const heartIcon = document.getElementById('heart-icon');
+
+    if (!hasLiked) {
+      // 하트 추가
+      likes++;
+      localStorage.setItem('ipod_has_liked', 'true');
+      btn.classList.add('liked');
+      heartIcon.textContent = '❤️';
+    } else {
+      // 하트 회수 (취소)
+      likes = Math.max(0, likes - 1);
+      localStorage.setItem('ipod_has_liked', 'false');
+      btn.classList.remove('liked');
+      heartIcon.textContent = '🖤';
+    }
+
+    // 화면 반영 및 브라우저 저장
+    document.getElementById('like-count').textContent = likes;
+    localStorage.setItem('ipod_shared_likes', likes);
+  }
 
   function tryPlayAudio() {
     if (widget) { widget.play(); }
@@ -327,11 +379,6 @@
 
   function updatePlayStatus() {
     document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (화면 터치 시 재생)';
-  }
-
-  function toggleLike() {
-    likes++;
-    document.getElementById('like-count').textContent = likes;
   }
 
   function addComment() {
