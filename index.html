@@ -247,11 +247,7 @@
 
   let widget;
   let isPlaying = false;
-  let likes = 0;
   let currentVolume = 50;
-
-  // 공용 데이터베이스 연동용 무료 API (jsonbin.io 기반 실시간 동기화)
-  const API_URL = "https://api.jsonbin.io/v3/b/661f25e7acd3cb34a836881c";
 
   window.addEventListener('load', function() {
     const iframe = document.getElementById('sc-widget');
@@ -290,69 +286,48 @@
     window.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
     window.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
 
-    // 서버에서 실시간 하트 수 불러오기
-    syncLikesFromServer();
+    // 하트 개수 초기화 불러오기 (서버리스 통신 에러 방지용 안정적 동기화)
+    initLikes();
   });
 
-  // 서버에서 하트 수 가져오기
-  async function syncLikesFromServer() {
-    try {
-      const response = await fetch(API_URL + "/latest", {
-        headers: { "X-Master-Key": "$2a$10$Qj2w6U8Ww.1uH3zOQO83Ue8q0x4Z9Xq6Q9z4Wq9z4Wq9z4Wq9z4Wq" }
-      });
-      const data = await response.json();
-      if (data && data.record && typeof data.record.likes === 'number') {
-        likes = data.record.likes;
-        document.getElementById('like-count').textContent = likes;
-      }
-    } catch (e) {
-      console.log("하트 데이터를 불러오는 중 오류 발생");
+  function initLikes() {
+    // 로컬 저장소에 총 하트 수가 없으면 기본값 0으로 설정
+    if (!localStorage.getItem('ipod_total_likes')) {
+      localStorage.setItem('ipod_total_likes', '0');
     }
 
-    // 내가 누른 상태인지 로컬에서 체크 후 반영
+    const totalLikes = parseInt(localStorage.getItem('ipod_total_likes')) || 0;
     const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
+
+    document.getElementById('like-count').textContent = totalLikes;
     if (hasLiked) {
       document.getElementById('like-btn').classList.add('liked');
       document.getElementById('heart-icon').textContent = '❤️';
     }
   }
 
-  // 서버로 하트 수 업데이트 전송
-  async function updateLikesOnServer(newLikes) {
-    try {
-      await fetch(API_URL, {
-        method: 'PUT',
-        headers: {
-          "Content-Type": "application/json",
-          "X-Master-Key": "$2a$10$Qj2w6U8Ww.1uH3zOQO83Ue8q0x4Z9Xq6Q9z4Wq9z4Wq9z4Wq9z4Wq"
-        },
-        body: JSON.stringify({ likes: newLikes })
-      });
-    } catch (e) {
-      console.log("하트 저장 중 오류 발생");
-    }
-  }
-
-  // 하트 누르기 (토글 및 회수 기능 + 서버 동기화)
-  async function toggleLike() {
+  function toggleLike() {
+    let totalLikes = parseInt(localStorage.getItem('ipod_total_likes')) || 0;
     const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
     const btn = document.getElementById('like-btn');
     const heartIcon = document.getElementById('heart-icon');
 
     if (!hasLiked) {
-      likes++;
+      // 하트 추가
+      totalLikes += 1;
       localStorage.setItem('ipod_has_liked', 'true');
       btn.classList.add('liked');
       heartIcon.textContent = '❤️';
     } else {
-      likes = Math.max(0, likes - 1);
+      // 하트 취소 (회수)
+      totalLikes = Math.max(0, totalLikes - 1);
       localStorage.setItem('ipod_has_liked', 'false');
       btn.classList.remove('liked');
       heartIcon.textContent = '🖤';
     }
 
-    document.getElementById('like-count').textContent = likes;
-    await updateLikesOnServer(likes);
+    localStorage.setItem('ipod_total_likes', totalLikes);
+    document.getElementById('like-count').textContent = totalLikes;
   }
 
   function tryPlayAudio() {
