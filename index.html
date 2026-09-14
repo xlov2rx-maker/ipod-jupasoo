@@ -9,6 +9,7 @@
 
     html, body {
       width: 100%;
+      height: 100%;
       height: 100dvh;
       background-color: #1a1a1a;
       display: flex;
@@ -16,6 +17,7 @@
       align-items: center;
       padding: 10px;
       overflow: hidden;
+      position: fixed; /* 모바일 바운스 스크롤 방지 */
     }
 
     .ipod-body {
@@ -255,7 +257,7 @@
       flex-shrink: 0;
       box-shadow: 0 6px 16px rgba(0,0,0,0.2), inset 0 0 10px rgba(0,0,0,0.08);
       border: 1px solid #e0e0e0;
-      touch-action: manipulation;
+      touch-action: none; /* 모바일에서 터치 시 화면 스크롤이나 확대 방지 */
     }
     
     .wheel-btn { position: absolute; background: none; border: none; font-weight: bold; color: #555; cursor: pointer; user-select: none; }
@@ -349,7 +351,6 @@
         <div class="thumbnail-box">
           <img id="album-art" src="https://i1.sndcdn.com/artworks-00000000-default-t500x500.jpg" alt="Album Art">
         </div>
-        <!-- 즉시 로딩되도록 초기 텍스트 설정 -->
         <div class="song-title" id="song-title">음악 재생 준비 중...</div>
         <div class="status-text" id="status-text">▶ 자동재생 대기 중...</div>
       </div>
@@ -395,8 +396,6 @@
   }
 
   let currentTrackUrl = getStoredTrack();
-
-  // 초기 타이틀과 썸네일을 로딩 전에도 빈 화면이 안 뜨도록 기본값 설정
   document.getElementById('song-title').textContent = currentTrackUrl.split('/').pop() || "주파수의 플레이어";
 
   window.addEventListener('load', function() {
@@ -419,7 +418,6 @@
       widget.play();
     });
 
-    // PC와 모바일 간 데이터 실시간 동기화 (다른 기기나 탭에서 노래가 바뀌면 즉시 연동됨)
     window.addEventListener('storage', function(e) {
       if (e.key === 'saved_ipod_track' && e.newValue && e.newValue !== currentTrackUrl) {
         currentTrackUrl = e.newValue;
@@ -427,6 +425,7 @@
       }
     });
 
+    // 모바일 터치 시 자동 재생 권한 강제 활성화
     const autoPlayTrigger = function() {
       tryPlayAudio();
       document.removeEventListener('touchstart', autoPlayTrigger);
