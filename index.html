@@ -153,6 +153,14 @@
     .comment-actions { display: flex; gap: 4px; }
     .comment-action-btn { font-size: 9px; color: #4b5563; cursor: pointer; background: none; border: none; font-weight: 600; }
     .comment-text { color: #374151; word-break: break-all; margin: 3px 0; font-size: 11px; }
+    .comment-text.deleted { color: #9ca3af; font-style: italic; }
+
+    /* 대댓글 스타일 */
+    .reply-list { margin-top: 6px; padding-left: 10px; border-left: 2px solid #e5e7eb; display: flex; flex-direction: column; gap: 4px; }
+    .reply-item { background: #f9fafb; padding: 6px; border-radius: 6px; font-size: 10px; }
+    .reply-form { margin-top: 6px; display: none; flex-direction: column; gap: 4px; }
+    .reply-form.active { display: flex; }
+    .reply-form input { font-size: 10px; padding: 4px 6px; }
 
     .wheel-container { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; }
     .click-wheel {
@@ -296,9 +304,7 @@
     window.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
     window.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
 
-    // 실시간 데이터 동기화 시작
     initRealtimeSync(db);
-    checkMyLikeStatus();
   });
 
   window.openCommentsModal = function() {
@@ -326,6 +332,7 @@
     document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (화면 터치 시 재생)';
   }
 
+  // 방명록 작성
   window.addGuestbookEntry = async function() {
     const nickname = document.getElementById('nickname').value.trim() || '익명';
     const text = document.getElementById('comment-text').value.trim();
@@ -335,7 +342,9 @@
       await addDoc(collection(db, "guestbooks"), {
         nickname: nickname,
         text: text,
-        createdAt: new Date()
+        createdAt: new Date(),
+        isDeleted: false,
+        replies: []
       });
       document.getElementById('comment-text').value = '';
       document.getElementById('nickname').value = '';
@@ -345,8 +354,9 @@
     }
   }
 
+  // 원 댓글 삭제 (데이터 완전 삭제)
   window.deleteGuestbookEntry = async function(id) {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
+    if (!confirm('정말 삭제하시겠습니까? (하위 답글도 모두 삭제됩니다)')) return;
     try {
       await deleteDoc(doc(db, "guestbooks", id));
     } catch (e) {
@@ -354,81 +364,88 @@
     }
   }
 
-  function getUserId() {
-    let uid = localStorage.getItem('ipod_user_uid');
-    if (!uid) {
-      uid = 'user_' + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('ipod_user_uid', uid);
-    }
-    return uid;
+  // 답글창 토글
+  window.toggleReplyForm = function(id) {
+    const form = document.getElementById(`reply-form-${id}`);
+    form.classList.toggle('active');
   }
 
-  async function checkMyLikeStatus() {
-    const uid = getUserId();
-    const likeDocRef = doc(db, "settings", "likes");
+  // 답글 추가
+  window.addReply = async function(id) {
+    const nicknameInput = document.getElementById(`reply-nick-${id}`);
+    const textInput = document.getElementById(`reply-text-${id}`);
+    const nickname = nicknameInput.value.trim() || '익명';
+    const text = textInput.value.trim();
+
+    if (!text) return alert('답글 내용을 입력해주세요.');
+
     try {
-      const docSnap = await getDoc(likeDocRef);
+      const docRef = doc(db, "guestbooks", id);
+      const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        const likedUsers = data.likedUsers || [];
-        if (likedUsers.includes(uid)) {
-          document.getElementById('like-btn').classList.add('liked');
-          document.getElementById('heart-icon').textContent = '❤️';
-        }
+        const replies = docSnap.data().replies || [];
+        const newReply = {
+          replyId: 'r_' + Math.random().toString(36).substring(2, 9),
+          nickname: nickname,
+          text: text,
+          createdAt: new Date().toISOString()
+        };
+        replies.push(newReply);
+        await updateDoc(docRef, { replies: replies });
+        textInput.value = '';
+        nicknameInput.value = '';
+        document.getElementById(`reply-form-${id}`).classList.remove('active');
       }
     } catch (e) {
-      console.error("하트 상태 확인 오류", e);
+      console.error("답글 저장 오류", e);
     }
   }
 
+  // 답글 삭제
+  window.deleteReply = async function(commentId, replyId) {
+    if (!confirm('답글을 삭제하시겠습니까?')) return;
+    try {
+      const docRef = doc(db, "guestbooks", commentId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        let replies = docSnap.data().replies || [];
+        replies = replies.filter(r => r.replyId !== replyId);
+        await updateDoc(docRef, { replies: replies });
+      }
+    } catch (e) {
+      console.error("답글 삭제 오류", e);
+    }
+  }
+
+  // 하트 누르기 (회수 없이 계속 누적)
   window.toggleLike = async function() {
-    const uid = getUserId();
     const likeDocRef = doc(db, "settings", "likes");
-    const btn = document.getElementById('like-btn');
     const heartIcon = document.getElementById('heart-icon');
+    
+    heartIcon.style.transform = 'scale(1.3)';
+    setTimeout(() => { heartIcon.style.transform = 'scale(1)'; }, 150);
 
     try {
       const docSnap = await getDoc(likeDocRef);
       let currentCount = 0;
-      let likedUsers = [];
 
       if (docSnap.exists()) {
         currentCount = docSnap.data().count || 0;
-        likedUsers = docSnap.data().likedUsers || [];
-      } else {
-        await setDoc(likeDocRef, { count: 0, likedUsers: [] });
       }
 
-      const hasLiked = likedUsers.includes(uid);
-
-      if (!hasLiked) {
-        currentCount += 1;
-        likedUsers.push(uid);
-        btn.classList.add('liked');
-        heartIcon.textContent = '❤️';
-      } else {
-        currentCount = Math.max(0, currentCount - 1);
-        likedUsers = likedUsers.filter(id => id !== uid);
-        btn.classList.remove('liked');
-        heartIcon.textContent = '🖤';
-      }
+      currentCount += 1;
 
       if (docSnap.exists()) {
-        await updateDoc(likeDocRef, {
-          count: currentCount,
-          likedUsers: likedUsers
-        });
+        await updateDoc(likeDocRef, { count: currentCount });
       } else {
-        await setDoc(likeDocRef, {
-          count: currentCount,
-          likedUsers: likedUsers
-        });
+        await setDoc(likeDocRef, { count: currentCount });
       }
     } catch (e) {
       console.error("하트 업데이트 오류", e);
     }
   }
 
+  // 실시간 동기화
   function initRealtimeSync(db) {
     const q = query(collection(db, "guestbooks"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
@@ -440,6 +457,28 @@
         const id = docSnap.id;
         const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
         
+        let repliesHtml = '';
+        if (data.replies && data.replies.length > 0) {
+          data.replies.forEach(reply => {
+            const replyTime = reply.createdAt ? new Date(reply.createdAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            repliesHtml += `
+              <div class="reply-item">
+                <div class="comment-header">
+                  <div class="comment-author-group">
+                    <span class="comment-author">${escapeHtml(reply.nickname)}</span>
+                    <span class="comment-time">${replyTime}</span>
+                  </div>
+                  <button class="comment-action-btn" onclick="deleteReply('${id}', '${reply.replyId}')">삭제</button>
+                </div>
+                <div class="comment-text">${escapeHtml(reply.text)}</div>
+              </div>
+            `;
+          });
+        }
+
+        const isDeleted = data.isDeleted;
+        const textDisplay = isDeleted ? '<span class="comment-text deleted">삭제된 댓글입니다.</span>' : `<div class="comment-text">${escapeHtml(data.text)}</div>`;
+
         const html = `
           <div class="cute-comment-item" id="${id}">
             <div class="comment-header">
@@ -448,10 +487,19 @@
                 <span class="comment-time">${timeStr}</span>
               </div>
               <div class="comment-actions">
+                <button class="comment-action-btn" onclick="toggleReplyForm('${id}')">답글</button>
                 <button class="comment-action-btn" onclick="deleteGuestbookEntry('${id}')">삭제</button>
               </div>
             </div>
-            <div class="comment-text">${escapeHtml(data.text)}</div>
+            ${textDisplay}
+            
+            <div class="reply-form" id="reply-form-${id}">
+              <input type="text" id="reply-nick-${id}" placeholder="답글 닉네임">
+              <input type="text" id="reply-text-${id}" placeholder="답글을 입력하세요...">
+              <button class="cute-btn-save" style="padding: 4px; border: none; font-size: 10px;" onclick="addReply('${id}')">답글 등록</button>
+            </div>
+
+            ${repliesHtml ? `<div class="reply-list">${repliesHtml}</div>` : ''}
           </div>
         `;
         commentList.insertAdjacentHTML('beforeend', html);
@@ -468,6 +516,7 @@
   }
 
   function escapeHtml(str) {
+    if (!str) return '';
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 </script>
