@@ -122,39 +122,37 @@
     }
     .modal-overlay.active { display: flex; }
     
-    #comments-modal { background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); }
+    #comments-modal { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); }
     .comments-modal-content { display: flex; flex-direction: column; height: 100%; }
-    .cute-title { font-size: 13px; font-weight: 800; text-align: center; color: #0284c7; margin-bottom: 6px; }
+    .cute-title { font-size: 13px; font-weight: 800; text-align: center; color: #111; margin-bottom: 6px; }
 
     .cute-input-container {
       background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(4px);
       padding: 8px;
       border-radius: 10px;
-      border: 1px solid #bae6fd;
-      box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+      border: 1px solid #d1d5db;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
     .cute-input-container input, .cute-input-container textarea {
-      border: 1px solid #7dd3fc; border-radius: 6px; padding: 6px 8px; background: #ffffff; font-size: 11px;
+      border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 8px; background: #ffffff; font-size: 11px;
     }
-    .cute-btn-save { background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; font-weight: bold; border-radius: 6px; }
-    .cute-btn-cancel { background: #94a3b8; color: white; border-radius: 6px; }
+    .cute-btn-save { background: #111; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    .cute-btn-cancel { background: #6b7280; color: white; border-radius: 6px; cursor: pointer; }
     
     .comment-list-scroll { flex: 1; overflow-y: auto; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
-    .cute-comment-item { background: #ffffff; padding: 8px 10px; border-radius: 8px; border: 1px solid #bae6fd; box-shadow: 0 2px 4px rgba(186, 230, 253, 0.3); font-size: 11px; }
+    .cute-comment-item { background: #ffffff; padding: 8px 10px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.03); font-size: 11px; }
 
     .comment-header { display: flex; justify-content: space-between; align-items: center; }
     .comment-author-group { display: flex; align-items: center; gap: 4px; }
-    .comment-author { font-weight: bold; color: #0369a1; }
-    .comment-time { font-size: 9px; color: #94a3b8; }
+    .comment-author { font-weight: bold; color: #111; }
+    .comment-time { font-size: 9px; color: #9ca3af; }
     .comment-actions { display: flex; gap: 4px; }
-    .comment-action-btn { font-size: 9px; color: #0284c7; cursor: pointer; background: none; border: none; font-weight: 600; }
-    .comment-text { color: #334155; word-break: break-all; margin: 3px 0; font-size: 11px; }
-    .reply-btn { font-size: 9px; color: #38bdf8; cursor: pointer; background: none; border: none; font-weight: bold; }
-    .reply-list { margin-left: 6px; margin-top: 4px; border-left: 2px solid #7dd3fc; padding-left: 6px; }
+    .comment-action-btn { font-size: 9px; color: #4b5563; cursor: pointer; background: none; border: none; font-weight: 600; }
+    .comment-text { color: #374151; word-break: break-all; margin: 3px 0; font-size: 11px; }
 
     .wheel-container { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px 0; }
     .click-wheel {
@@ -190,18 +188,18 @@
   <div class="ipod-screen">
     <div class="screen-header">
       <span>주파수의 ipod</span>
-      <span class="header-icon" onclick="openCommentsModal()" title="소통하기">💬</span>
+      <span class="header-icon" onclick="openCommentsModal()" title="방명록 열기">🖤</span>
     </div>
 
-    <!-- 소통 모달 -->
+    <!-- 방명록 모달 -->
     <div class="modal-overlay" id="comments-modal">
       <div class="comments-modal-content">
-        <div class="cute-title">☁️ 소통 공간 ☁️</div>
+        <div class="cute-title">🖤 방명록 🖤</div>
         <div class="cute-input-container">
           <input type="text" id="nickname" placeholder="닉네임">
-          <textarea id="comment-text" placeholder="예쁜 댓글을 남겨주세요..."></textarea>
+          <textarea id="comment-text" placeholder="예쁜 방명록을 남겨주세요..."></textarea>
           <div style="display: flex; gap: 6px; margin-top: 4px;">
-            <button class="cute-btn-save" style="flex: 1; padding: 8px; border: none;" onclick="addComment()">작성</button>
+            <button class="cute-btn-save" style="flex: 1; padding: 8px; border: none;" onclick="addGuestbookEntry()">작성</button>
             <button class="cute-btn-cancel" style="flex: 1; padding: 8px; border: none;" onclick="closeCommentsModal()">닫기</button>
           </div>
         </div>
@@ -241,10 +239,26 @@
 </div>
 
 <script src="https://w.soundcloud.com/player/api.js"></script>
-<script>
-  // 🎵 아래에 원하시는 사운드클라우드 링크를 그대로 넣어주세요!
-  const FIXED_TRACK_URL = "https://soundcloud.com/404wave/penomeco-pt-2";
+<!-- Firebase SDK 로드 -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+  // ⚠️ [중요] 본인의 Firebase 콘솔에서 발급받은 설정값으로 아래를 교체해주세요!
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 🎵 사운드클라우드 설정
+  const FIXED_TRACK_URL = "https://soundcloud.com/404wave/penomeco-pt-2";
   let widget;
   let isPlaying = false;
   let currentVolume = 50;
@@ -269,11 +283,7 @@
 
     widget.bind(SC.Widget.Events.PLAY, function() { isPlaying = true; updatePlayStatus(); });
     widget.bind(SC.Widget.Events.PAUSE, function() { isPlaying = false; updatePlayStatus(); });
-
-    widget.bind(SC.Widget.Events.FINISH, function() {
-      widget.seekTo(0);
-      widget.play();
-    });
+    widget.bind(SC.Widget.Events.FINISH, function() { widget.seekTo(0); widget.play(); });
 
     const autoPlayTrigger = function() {
       tryPlayAudio();
@@ -286,218 +296,127 @@
     window.addEventListener('click', autoPlayTrigger, { passive: true, once: true });
     window.addEventListener('touchend', autoPlayTrigger, { passive: true, once: true });
 
-    // 하트 개수 초기화 불러오기 (서버리스 통신 에러 방지용 안정적 동기화)
-    initLikes();
+    // 실시간 데이터 동기화 시작
+    initRealtimeSync(db);
   });
 
-  function initLikes() {
-    // 로컬 저장소에 총 하트 수가 없으면 기본값 0으로 설정
-    if (!localStorage.getItem('ipod_total_likes')) {
-      localStorage.setItem('ipod_total_likes', '0');
-    }
-
-    const totalLikes = parseInt(localStorage.getItem('ipod_total_likes')) || 0;
-    const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
-
-    document.getElementById('like-count').textContent = totalLikes;
-    if (hasLiked) {
-      document.getElementById('like-btn').classList.add('liked');
-      document.getElementById('heart-icon').textContent = '❤️';
-    }
-  }
-
-  function toggleLike() {
-    let totalLikes = parseInt(localStorage.getItem('ipod_total_likes')) || 0;
-    const hasLiked = localStorage.getItem('ipod_has_liked') === 'true';
-    const btn = document.getElementById('like-btn');
-    const heartIcon = document.getElementById('heart-icon');
-
-    if (!hasLiked) {
-      // 하트 추가
-      totalLikes += 1;
-      localStorage.setItem('ipod_has_liked', 'true');
-      btn.classList.add('liked');
-      heartIcon.textContent = '❤️';
-    } else {
-      // 하트 취소 (회수)
-      totalLikes = Math.max(0, totalLikes - 1);
-      localStorage.setItem('ipod_has_liked', 'false');
-      btn.classList.remove('liked');
-      heartIcon.textContent = '🖤';
-    }
-
-    localStorage.setItem('ipod_total_likes', totalLikes);
-    document.getElementById('like-count').textContent = totalLikes;
-  }
-
-  function tryPlayAudio() {
-    if (widget) { widget.play(); }
-  }
-
-  function changeVolume(delta) {
-    if (!widget) return;
-    currentVolume = Math.min(100, Math.max(0, currentVolume + delta));
-    widget.setVolume(currentVolume);
-
-    const statusText = document.getElementById('status-text');
-    statusText.textContent = `🔊 볼륨: ${currentVolume}%`;
-    
-    setTimeout(() => {
-      updatePlayStatus();
-    }, 1500);
-  }
-
-  function getFormattedDateTime() {
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    return `${yy}.${mm}.${dd} ${hh}:${min}`;
-  }
-
-  function openCommentsModal() {
+  // 전역 함수로 등록 (HTML 내 이벤트 핸들러에서 호출 가능하도록)
+  window.openCommentsModal = function() {
     document.getElementById('comments-modal').classList.add('active');
   }
 
-  function closeCommentsModal() {
+  window.closeCommentsModal = function() {
     document.getElementById('comments-modal').classList.remove('active');
   }
 
-  function togglePlayPause() {
+  window.togglePlayPause = function() {
     if (widget) widget.toggle();
+  }
+
+  window.changeVolume = function(delta) {
+    if (!widget) return;
+    currentVolume = Math.min(100, Math.max(0, currentVolume + delta));
+    widget.setVolume(currentVolume);
+    const statusText = document.getElementById('status-text');
+    statusText.textContent = `🔊 볼륨: ${currentVolume}%`;
+    setTimeout(() => { updatePlayStatus(); }, 1500);
   }
 
   function updatePlayStatus() {
     document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (화면 터치 시 재생)';
   }
 
-  function addComment() {
+  // 방명록 작성 함수
+  window.addGuestbookEntry = async function() {
     const nickname = document.getElementById('nickname').value.trim() || '익명';
     const text = document.getElementById('comment-text').value.trim();
-    if (!text) return alert('댓글 내용을 입력해주세요.');
+    if (!text) return alert('방명록 내용을 입력해주세요.');
 
-    const timeStr = getFormattedDateTime();
-    const commentList = document.getElementById('comment-list');
-    const commentId = 'comment-' + Date.now();
-    const commentHTML = `
-      <div class="cute-comment-item" id="${commentId}">
-        <div class="comment-header">
-          <div class="comment-author-group">
-            <span class="comment-author">${escapeHtml(nickname)}</span>
-            <span class="comment-time">${timeStr}</span>
-          </div>
-          <div class="comment-actions">
-            <button class="comment-action-btn" onclick="editComment('${commentId}')">수정</button>
-            <button class="comment-action-btn" onclick="deleteComment('${commentId}')">삭제</button>
-          </div>
-        </div>
-        <div class="comment-text">${escapeHtml(text)}</div>
-        <button class="reply-btn" onclick="showReplyBox('${commentId}')">답글 달기</button>
-        <div class="reply-list"></div>
-      </div>`;
-    commentList.insertAdjacentHTML('afterbegin', commentHTML);
-    document.getElementById('comment-text').value = '';
-  }
-
-  function showReplyBox(commentId) {
-    const commentItem = document.getElementById(commentId);
-    if (commentItem.querySelector('.reply-input-box')) return;
-    const replyBoxHTML = `
-      <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 3px;" class="reply-input-box">
-        <input type="text" class="reply-nickname" placeholder="닉네임" style="font-size: 10px; padding: 3px 5px;">
-        <textarea class="reply-text" placeholder="답글 내용" style="font-size: 10px; height: 30px; padding: 3px 5px;"></textarea>
-        <div style="display: flex; gap: 4px;">
-          <button style="font-size: 10px; background: #38bdf8; color: white; border: none; padding: 3px 6px; border-radius: 4px; font-weight: bold;" onclick="addReply('${commentId}')">등록</button>
-          <button style="font-size: 10px; background: #94a3b8; color: white; border: none; padding: 3px 6px; border-radius: 4px;" onclick="this.parentElement.parentElement.remove()">취소</button>
-        </div>
-      </div>`;
-    commentItem.insertAdjacentHTML('beforeend', replyBoxHTML);
-  }
-
-  function addReply(commentId) {
-    const commentItem = document.getElementById(commentId);
-    const nickname = commentItem.querySelector('.reply-nickname').value.trim() || '익명';
-    const text = commentItem.querySelector('.reply-text').value.trim();
-    if (!text) return alert('답글 내용을 입력해주세요.');
-
-    const timeStr = getFormattedDateTime();
-    const replyList = commentItem.querySelector('.reply-list');
-    const replyId = 'reply-' + Date.now();
-    const replyHTML = `
-      <div class="cute-comment-item" id="${replyId}" style="margin-top: 4px; border-color: #e0f2fe;">
-        <div class="comment-header">
-          <div class="comment-author-group">
-            <span class="comment-author">${escapeHtml(nickname)}</span>
-            <span class="comment-time">${timeStr}</span>
-          </div>
-          <div class="comment-actions">
-            <button class="comment-action-btn" onclick="editComment('${replyId}')">수정</button>
-            <button class="comment-action-btn" onclick="deleteComment('${replyId}')">삭제</button>
-          </div>
-        </div>
-        <div class="comment-text">${escapeHtml(text)}</div>
-      </div>`;
-    replyList.insertAdjacentHTML('beforeend', replyHTML);
-    commentItem.querySelector('.reply-input-box').remove();
-  }
-
-  function editComment(itemId) {
-    const item = document.getElementById(itemId);
-    const authorSpan = item.querySelector('.comment-author');
-    const textDiv = item.querySelector('.comment-text');
-
-    if (item.querySelector('.edit-box')) return;
-
-    const currentAuthor = authorSpan.textContent;
-    const currentText = textDiv.textContent;
-
-    const editFormHTML = `
-      <div class="edit-box" style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px; background: #f0f9ff; padding: 6px; border-radius: 6px; border: 1px solid #7dd3fc;">
-        <input type="text" class="edit-nickname-input" value="${escapeHtml(currentAuthor)}" style="font-size: 10px; padding: 3px 5px; border: 1px solid #bae6fd; border-radius: 4px;">
-        <textarea class="edit-text-input" style="font-size: 10px; height: 32px; padding: 3px 5px; border: 1px solid #bae6fd; border-radius: 4px; resize: none;">${escapeHtml(currentText)}</textarea>
-        <div style="display: flex; gap: 4px; margin-top: 2px;">
-          <button style="font-size: 10px; background: #0284c7; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="saveEdit('${itemId}')">완료</button>
-          <button style="font-size: 10px; background: #94a3b8; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">취소</button>
-        </div>
-      </div>
-    `;
-    item.insertAdjacentHTML('beforeend', editFormHTML);
-  }
-
-  function saveEdit(itemId) {
-    const item = document.getElementById(itemId);
-    const newAuthor = item.querySelector('.edit-nickname-input').value.trim();
-    const newText = item.querySelector('.edit-text-input').value.trim();
-    if (!newText) return alert('댓글 내용을 입력해주세요.');
-
-    item.querySelector('.comment-author').textContent = newAuthor || '익명';
-    item.querySelector('.comment-text').textContent = newText;
-    item.querySelector('.edit-box').remove();
-  }
-
-  function deleteComment(itemId) {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-    const item = document.getElementById(itemId);
-    const parentComment = item.closest('.cute-comment-item:not([id^="reply-"])');
-    const replyList = item.querySelector('.reply-list');
-
-    if (replyList && replyList.children.length > 0) {
-      item.setAttribute('data-deleted', 'true');
-      item.querySelector('.comment-author').textContent = '알림';
-      item.querySelector('.comment-text').innerHTML = '<i style="color: #94a3b8;">삭제된 댓글입니다.</i>';
-      const actions = item.querySelector('.comment-actions');
-      if (actions) actions.remove();
-      const replyBtn = item.querySelector('.reply-btn');
-      if (replyBtn) replyBtn.style.display = 'none';
-    } else {
-      const parentReplyList = item.parentElement;
-      item.remove();
-      if (parentComment && parentComment.getAttribute('data-deleted') === 'true') {
-        if (parentReplyList.children.length === 0) parentComment.remove();
-      }
+    try {
+      await addDoc(collection(db, "guestbooks"), {
+        nickname: nickname,
+        text: text,
+        createdAt: new Date()
+      });
+      document.getElementById('comment-text').value = '';
+      document.getElementById('nickname').value = '';
+    } catch (e) {
+      console.error("저장 오류: ", e);
+      alert("저장 중 오류가 발생했습니다.");
     }
+  }
+
+  // 방명록 삭제 함수
+  window.deleteGuestbookEntry = async function(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    try {
+      await deleteDoc(doc(db, "guestbooks", id));
+    } catch (e) {
+      console.error("삭제 오류: ", e);
+    }
+  }
+
+  // 검정색 하트 공감 토글 함수 (문서 기반 공유 또는 카운터 공유)
+  window.toggleLike = async function() {
+    const likeDocRef = doc(db, "settings", "likes");
+    const btn = document.getElementById('like-btn');
+    const heartIcon = document.getElementById('heart-icon');
+    
+    // 간단히 누를 때마다 숫자가 올라가도록 설정 (혹은 개인별 중복 방지 로직 추가 가능)
+    try {
+      await updateDoc(likeDocRef, {
+        count: increment(1)
+      });
+      btn.classList.add('liked');
+      heartIcon.textContent = '❤️';
+      setTimeout(() => {
+        heartIcon.textContent = '🖤';
+        btn.classList.remove('liked');
+      }, 300);
+    } catch (e) {
+      console.error("하트 업데이트 오류", e);
+    }
+  }
+
+  // 실시간 데이터 감지 (누가 들어와도 바로 동기화)
+  function initRealtimeSync(db) {
+    // 1. 방명록 실시간 리스트 불러오기
+    const q = query(collection(db, "guestbooks"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      const commentList = document.getElementById('comment-list');
+      commentList.innerHTML = '';
+      
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        const timeStr = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+        
+        const html = `
+          <div class="cute-comment-item" id="${id}">
+            <div class="comment-header">
+              <div class="comment-author-group">
+                <span class="comment-author">${escapeHtml(data.nickname)}</span>
+                <span class="comment-time">${timeStr}</span>
+              </div>
+              <div class="comment-actions">
+                <button class="comment-action-btn" onclick="deleteGuestbookEntry('${id}')">삭제</button>
+              </div>
+            </div>
+            <div class="comment-text">${escapeHtml(data.text)}</div>
+          </div>
+        `;
+        commentList.insertAdjacentHTML('beforeend', html);
+      });
+    });
+
+    // 2. 하트 개수 실시간 동기화
+    const likeDocRef = doc(db, "settings", "likes");
+    onSnapshot(likeDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById('like-count').textContent = data.count || 0;
+      }
+    });
   }
 
   function escapeHtml(str) {
