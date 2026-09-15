@@ -244,9 +244,8 @@
 <!-- Firebase SDK 로드 -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, increment, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // ⚠️ [중요] 본인의 Firebase 콘솔에서 발급받은 설정값으로 아래를 교체해주세요!
   const firebaseConfig = {
     apiKey: "AIzaSyDvchU96oPKHEmrB5bvH7SWB8tP-uqSCbA",
     authDomain: "ipod-jupasoo.firebaseapp.com",
@@ -259,7 +258,6 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 🎵 사운드클라우드 설정
   const FIXED_TRACK_URL = "https://soundcloud.com/404wave/penomeco-pt-2";
   let widget;
   let isPlaying = false;
@@ -280,7 +278,7 @@
           document.getElementById('album-art').src = artwork;
         }
       });
-      tryPlayAudio();
+      widget.play();
     });
 
     widget.bind(SC.Widget.Events.PLAY, function() { isPlaying = true; updatePlayStatus(); });
@@ -288,7 +286,7 @@
     widget.bind(SC.Widget.Events.FINISH, function() { widget.seekTo(0); widget.play(); });
 
     const autoPlayTrigger = function() {
-      tryPlayAudio();
+      if (widget) widget.play();
       window.removeEventListener('touchstart', autoPlayTrigger);
       window.removeEventListener('click', autoPlayTrigger);
       window.removeEventListener('touchend', autoPlayTrigger);
@@ -303,7 +301,6 @@
     checkMyLikeStatus();
   });
 
-  // 전역 함수 등록
   window.openCommentsModal = function() {
     document.getElementById('comments-modal').classList.add('active');
   }
@@ -329,7 +326,6 @@
     document.getElementById('status-text').textContent = isPlaying ? '▶ 재생 중...' : '⏸ 일시정지됨 (화면 터치 시 재생)';
   }
 
-  // 방명록 작성 함수
   window.addGuestbookEntry = async function() {
     const nickname = document.getElementById('nickname').value.trim() || '익명';
     const text = document.getElementById('comment-text').value.trim();
@@ -349,7 +345,6 @@
     }
   }
 
-  // 방명록 삭제 함수
   window.deleteGuestbookEntry = async function(id) {
     if (!confirm('정말 삭제하시겠습니까?')) return;
     try {
@@ -359,7 +354,6 @@
     }
   }
 
-  // 브라우저별 고유 사용자 ID 생성 (내 기기에서 하트를 눌렀는지 기억하기 위함)
   function getUserId() {
     let uid = localStorage.getItem('ipod_user_uid');
     if (!uid) {
@@ -369,23 +363,24 @@
     return uid;
   }
 
-  // 접속 시 내가 이미 하트를 눌렀는지 확인하고 UI 설정
   async function checkMyLikeStatus() {
     const uid = getUserId();
     const likeDocRef = doc(db, "settings", "likes");
-    const docSnap = await getDoc(likeDocRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const likedUsers = data.likedUsers || [];
-      if (likedUsers.includes(uid)) {
-        document.getElementById('like-btn').classList.add('liked');
-        document.getElementById('heart-icon').textContent = '❤️';
+    try {
+      const docSnap = await getDoc(likeDocRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const likedUsers = data.likedUsers || [];
+        if (likedUsers.includes(uid)) {
+          document.getElementById('like-btn').classList.add('liked');
+          document.getElementById('heart-icon').textContent = '❤️';
+        }
       }
+    } catch (e) {
+      console.error("하트 상태 확인 오류", e);
     }
   }
 
-  // 검정색 하트 공감 토글 (누르면 +1, 한 번 더 누르면 -1 회수)
   window.toggleLike = async function() {
     const uid = getUserId();
     const likeDocRef = doc(db, "settings", "likes");
@@ -407,31 +402,34 @@
       const hasLiked = likedUsers.includes(uid);
 
       if (!hasLiked) {
-        // 하트 누르기 (+1)
         currentCount += 1;
         likedUsers.push(uid);
         btn.classList.add('liked');
         heartIcon.textContent = '❤️';
       } else {
-        // 하트 취소 / 회수 (-1)
         currentCount = Math.max(0, currentCount - 1);
         likedUsers = likedUsers.filter(id => id !== uid);
         btn.classList.remove('liked');
         heartIcon.textContent = '🖤';
       }
 
-      await updateDoc(likeDocRef, {
-        count: currentCount,
-        likedUsers: likedUsers
-      });
+      if (docSnap.exists()) {
+        await updateDoc(likeDocRef, {
+          count: currentCount,
+          likedUsers: likedUsers
+        });
+      } else {
+        await setDoc(likeDocRef, {
+          count: currentCount,
+          likedUsers: likedUsers
+        });
+      }
     } catch (e) {
       console.error("하트 업데이트 오류", e);
     }
   }
 
-  // 실시간 데이터 동기화 (누가 들어와도 바로 반영)
   function initRealtimeSync(db) {
-    // 1. 방명록 실시간 리스트
     const q = query(collection(db, "guestbooks"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
       const commentList = document.getElementById('comment-list');
@@ -460,7 +458,6 @@
       });
     });
 
-    // 2. 하트 개수 실시간 동기화
     const likeDocRef = doc(db, "settings", "likes");
     onSnapshot(likeDocRef, (docSnap) => {
       if (docSnap.exists()) {
